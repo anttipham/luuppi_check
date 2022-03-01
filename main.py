@@ -18,6 +18,7 @@ HEADERS = {
     'content-type': 'application/json;charset=UTF-8',
     'cookie': USER_INFO["COOKIE"],
 }
+MY_ORDERS_URL = 'https://www.luuppi.fi/omattiedot/tilaukset#/orders/{}'
 
 
 def parse_cmd() -> int:
@@ -88,11 +89,14 @@ def main():
     while True:
         try:
             if try_order(order_id, args.product_id):
-                print("Tuote tilattu!", flush=True)
-                winsound.Beep(500, 10000)
+                print("Tuote lisätty ostoskoriin!")
+                print(f"Maksa tilauksesi: {MY_ORDERS_URL.format(order_id)}",
+                      flush=True)
+                winsound.Beep(500, 1000)
                 # Stop the program for 59 min 55 sec. After that, try to
                 # order the outdated order again.
-                time.sleep(59*60 + 55)
+                # time.sleep(59*60 + 55)
+                return
             time.sleep(SLEEP_LENGTH)
         except requests.exceptions.ConnectionError:
             time.sleep(SLEEP_LENGTH)
