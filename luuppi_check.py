@@ -74,9 +74,8 @@ def wait(time_str: str) -> None:
                                      time_now.month,
                                      time_now.day)
     span = start_time - time_now
-    # print(f"{span=}")
     print(f"Sleeping for {span.seconds} seconds")
-    time.sleep(span.seconds)
+    time.sleep(span.seconds + span.microseconds / 10**6)
 
 
 def main():
