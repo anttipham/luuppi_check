@@ -23,10 +23,10 @@ HEADERS = {
 def parse_cmd() -> int:
     """Parses the command line argument and returns the product ID"""
     parser = argparse.ArgumentParser(description="Sends HTTP request to order the product from Luuppi website")
-    parser.add_argument("product_id", type=int, nargs=1)
-    parser.add_argument("time", type=int, nargs=1)
+    parser.add_argument("product_id", type=int)
+    parser.add_argument("start_time", type=str)
     args = parser.parse_args()
-    return args.product_id[0]
+    return args
 
 
 def read_json(byte_data: bytes) -> Any:
@@ -66,14 +66,28 @@ def try_order(order_id: int, product_id: int) -> bool:
         return False
 
 
+def wait(time_str: str) -> None:
+    """Sleep until registration starts"""
+    time_now = datetime.now()
+    start_clock = datetime.strptime(time_str, "%H:%M")
+    start_time = start_clock.replace(time_now.year,
+                                     time_now.month,
+                                     time_now.day)
+    span = start_time - time_now
+    # print(f"{span=}")
+    print(f"Sleeping for {span.seconds} seconds")
+    time.sleep(span.seconds)
+
+
 def main():
     """A"""
-    product_id = parse_cmd()
+    args = parse_cmd()
     order_id = create_order()
-    print(f"{order_id=} {product_id=}")
+    print(f"{order_id=} {args.product_id=}")
+    wait(args.start_time)
     while True:
         try:
-            if try_order(order_id, product_id):
+            if try_order(order_id, args.product_id):
                 print("Tuote tilattu!", flush=True)
                 winsound.Beep(500, 10000)
                 # Stop the program for 59 min 55 sec. After that, try to
