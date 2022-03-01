@@ -83,7 +83,8 @@ def main():
     """A"""
     args = parse_cmd()
     order_id = create_order()
-    print(f"{order_id=} {args.product_id=}")
+    print(f"Order ID: {order_id}")
+    print(f"Product ID: {args.product_id}")
     wait(args.start_time)
     while True:
         try:
