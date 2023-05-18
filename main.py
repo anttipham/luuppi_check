@@ -12,18 +12,35 @@ SLEEP_LENGTH = 0
 
 with open("user.json", "r", encoding="utf-8") as f:
     USER_INFO = json.loads(f.read())
-ORDER_URL = 'https://www.luuppi.fi/service/products/orders'
-ADD_ITEM_URL = 'https://www.luuppi.fi/service/products/orders/{}/reservations'
+ORDER_URL = "https://www.luuppi.fi/service/products/orders"
+ADD_ITEM_URL = "https://www.luuppi.fi/service/products/orders/{}/reservations"
 HEADERS = {
-    'content-type': 'application/json;charset=UTF-8',
-    'cookie': USER_INFO["COOKIE"],
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "ja,fi;q=0.9,fi-FI;q=0.8,en-US;q=0.7,en;q=0.6",
+    "Connection": "keep-alive",
+    "Content-Length": "23",
+    "Content-Type": "application/json;charset=UTF-8",
+    "Cookie": USER_INFO["COOKIE"],
+    "Host": "www.luuppi.fi",
+    "Origin": "https://www.luuppi.fi",
+    "Referer": "https://www.luuppi.fi/tapahtumat/tapahtuma?id={}",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
+    "sec-ch-ua": '"Google Chrome";v="107", "Chromium";v="107", "Not=A?Brand";v="24"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
 }
-MY_ORDERS_URL = 'https://www.luuppi.fi/omattiedot/tilaukset#/orders/{}'
+MY_ORDERS_URL = "https://www.luuppi.fi/omattiedot/tilaukset#/orders/{}"
 
 
 def parse_cmd() -> int:
     """Parses the command line argument and returns the product ID"""
-    parser = argparse.ArgumentParser(description="Sends HTTP request to order the product from Luuppi website")
+    parser = argparse.ArgumentParser(
+        description="Sends HTTP request to order the product from Luuppi website"
+    )
     parser.add_argument("product_id", type=int)
     parser.add_argument("start_time", type=str)
     args = parser.parse_args()
@@ -35,9 +52,9 @@ def read_json(byte_data: bytes) -> Any:
     return json.loads(byte_data.decode())
 
 
-def create_order() -> int:
+def create_order(product_id: int) -> int:
     """Creates the order and returns order ID"""
-    kayttaja_data = { "owner_user_id": USER_INFO["USER_ID"] }
+    kayttaja_data = {"owner_user_id": USER_INFO["USER_ID"].format(product_id)}
     response = requests.post(ORDER_URL, headers=HEADERS, json=kayttaja_data)
     return read_json(response.content)["id"]
 
@@ -45,8 +62,8 @@ def create_order() -> int:
 def add_item(order_id: int, product_id: int) -> bool:
     """Adds item. Returns the response from the website"""
     url = ADD_ITEM_URL.format(order_id)
-    data = { "products": [{ "product_id": product_id, "amount":1 }] }
-    response = requests.post(url, headers=HEADERS, json=data)
+    data = {"products": [{"product_id": product_id, "amount": 1}]}
+    response = requests.post(url, headers=HEADERS.format(product_id), json=data)
 
     return response
 
@@ -56,10 +73,12 @@ def try_order(order_id: int, product_id: int) -> bool:
     response = add_item(order_id, product_id)
     json_data = read_json(response.content)[0]
 
-    print(datetime.now().strftime("%H:%M:%S.%f")[:-4],
-          "\t",
-          f"status={response.status_code}",
-          flush=True)
+    print(
+        datetime.now().strftime("%H:%M:%S.%f")[:-4],
+        "\t",
+        f"status={response.status_code}",
+        flush=True,
+    )
 
     if json_data["amount"]:
         return True
@@ -71,9 +90,7 @@ def wait(time_str: str) -> None:
     """Sleep until registration starts"""
     time_now = datetime.now()
     start_clock = datetime.strptime(time_str, "%H:%M")
-    start_time = start_clock.replace(time_now.year,
-                                     time_now.month,
-                                     time_now.day)
+    start_time = start_clock.replace(time_now.year, time_now.month, time_now.day)
     span = start_time - time_now
     print(f"Sleeping for {span.seconds} seconds")
     time.sleep(span.seconds + span.microseconds / 10**6)
@@ -82,7 +99,7 @@ def wait(time_str: str) -> None:
 def main():
     """A"""
     args = parse_cmd()
-    order_id = create_order()
+    order_id = create_order(args.product_id)
     print(f"Order ID: {order_id}")
     print(f"Product ID: {args.product_id}")
     wait(args.start_time)
@@ -90,8 +107,7 @@ def main():
         try:
             if try_order(order_id, args.product_id):
                 print("Tuote lisätty ostoskoriin!")
-                print(f"Maksa tilauksesi: {MY_ORDERS_URL.format(order_id)}",
-                      flush=True)
+                print(f"Maksa tilauksesi: {MY_ORDERS_URL.format(order_id)}", flush=True)
                 winsound.Beep(500, 1000)
                 # Stop the program for 59 min 55 sec. After that, try to
                 # order the outdated order again.
